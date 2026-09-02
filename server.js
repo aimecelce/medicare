@@ -5,7 +5,7 @@ require("dotenv").config();
 const path = require("path");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 // =====================================
 // ADMIN LOGIN DETAILS
@@ -21,7 +21,7 @@ app.use(express.json());
 app.use(express.static(__dirname));
 
 // =====================================
-// ROOT ROUTE
+// ROOT ROUTE - SERVE INDEX.HTML
 // =====================================
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "index.html"));
@@ -33,9 +33,11 @@ app.get("/", (req, res) => {
 let db;
 
 if (process.env.DATABASE_URL) {
+    // For Render (using Aiven MySQL)
     db = mysql.createConnection(process.env.DATABASE_URL);
-    console.log("🔗 Using Railway MySQL");
+    console.log("🔗 Using Cloud MySQL (Aiven)");
 } else {
+    // For local development (XAMPP)
     db = mysql.createConnection({
         host: process.env.DB_HOST || "localhost",
         user: process.env.DB_USER || "root",
@@ -43,7 +45,7 @@ if (process.env.DATABASE_URL) {
         database: process.env.DB_NAME || "medicare_db",
         port: process.env.DB_PORT || 3306
     });
-    console.log("🔗 Using Local MySQL");
+    console.log("🔗 Using Local MySQL (XAMPP)");
 }
 
 // =====================================
@@ -52,6 +54,7 @@ if (process.env.DATABASE_URL) {
 db.connect((err) => {
     if (err) {
         console.error("❌ Database connection failed:", err.message);
+        console.log("⚠️ Continuing without database...");
         return;
     }
     console.log("✅ Connected to Medicare database!");
@@ -136,7 +139,6 @@ app.post("/api/register", (req, res) => {
         });
     }
 
-    // Simple password hashing (for demo - use bcrypt in production)
     const hashedPassword = Buffer.from(password).toString('base64');
 
     const sql = `
