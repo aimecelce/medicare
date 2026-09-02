@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medicare Admin Login</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #0f3a2e, #184e3f, #0b2b22);
+            color: white;
+            padding: 20px;
+        }
+        .login-box {
+            width: 100%;
+            max-width: 400px;
+            padding: 40px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.09);
+            border: 1px solid rgba(255,255,255,0.15);
+            backdrop-filter: blur(15px);
+        }
+        h1 { text-align: center; margin-bottom: 8px; font-size: 28px; }
+        p.sub { text-align: center; color: #b8cbc4; margin-bottom: 30px; font-size: 14px; }
+        input {
+            width: 100%;
+            padding: 14px;
+            margin-bottom: 15px;
+            border: none;
+            border-radius: 10px;
+            outline: none;
+            font-size: 16px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+        input::placeholder { color: #9ab0a8; }
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            background: linear-gradient(90deg, #2F7A6B, #1F5A4E);
+            transition: 0.3s;
+        }
+        button:hover { transform: translateY(-2px); opacity: 0.9; }
+        #message { margin-top: 20px; color: #ffaaaa; text-align: center; }
+        .logo { text-align: center; font-size: 36px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <div class="logo">🏥</div>
+        <h1>Medicare Admin</h1>
+        <p class="sub">Secure dashboard login</p>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="login()">Login →</button>
+        <p id="message"></p>
+    </div>
+
+    <script>
+        async function login() {
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+            const message = document.getElementById("message");
+
+            if (!username || !password) {
+                message.textContent = "Please enter both username and password.";
+                return;
+            }
+
+            try {
+                const response = await fetch("/api/admin-login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    message.textContent = data.message;
+                    return;
+                }
+
+                sessionStorage.setItem("adminLoggedIn", "true");
+                window.location.href = "admin.html";
+            } catch (error) {
+                message.textContent = "Could not connect to server.";
+                console.error(error);
+            }
+        }
+
+        // Press Enter to login
+        document.getElementById("password").addEventListener("keydown", function(e) {
+            if (e.key === "Enter") login();
+        });
+        document.getElementById("username").addEventListener("keydown", function(e) {
+            if (e.key === "Enter") login();
+        });
+    </script>
+</body>
+</html>

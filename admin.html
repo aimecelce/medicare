@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medicare Admin Dashboard</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            min-height: 100vh;
+            padding: 30px 20px;
+            color: #1E3833;
+            background: #F6F8F7;
+        }
+        .container { max-width: 1100px; margin: auto; }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 30px;
+            background: white;
+            padding: 20px 24px;
+            border-radius: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+        header h1 { font-size: 24px; display: flex; align-items: center; gap: 10px; }
+        header .badge { background: #2F7A6B; color: white; padding: 6px 14px; border-radius: 999px; font-size: 12px; }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 14px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+        .stat-card .number { font-size: 28px; font-weight: 700; color: #1F5A4E; }
+        .stat-card .label { font-size: 13px; color: #8A9C94; margin-top: 4px; }
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .tabs button {
+            padding: 10px 22px;
+            border: none;
+            border-radius: 10px;
+            background: white;
+            color: #52685F;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .tabs button.active {
+            background: #1F5A4E;
+            color: white;
+        }
+        .tabs button:hover:not(.active) { background: #E7F0EC; }
+        .panel {
+            display: none;
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            overflow-x: auto;
+        }
+        .panel.active { display: block; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        th {
+            text-align: left;
+            padding: 12px 10px;
+            border-bottom: 2px solid #DAE5DE;
+            color: #52685F;
+            font-weight: 600;
+        }
+        td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #DAE5DE;
+            vertical-align: middle;
+        }
+        tr:hover { background: #F6F8F7; }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-badge.unread { background: #F5E7E1; color: #B85138; }
+        .status-badge.read { background: #E7F0EC; color: #2F7A6B; }
+        .status-badge.pending { background: #FBF1DE; color: #D89A34; }
+        .status-badge.confirmed { background: #E7F0EC; color: #2F7A6B; }
+        .empty-state {
+            text-align: center;
+            padding: 50px 20px;
+            color: #8A9C94;
+        }
+        .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+        .logout-btn {
+            background: none;
+            border: 1px solid #DAE5DE;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            color: #52685F;
+            font-size: 13px;
+            transition: 0.2s;
+        }
+        .logout-btn:hover { background: #F5E7E1; border-color: #B85138; color: #B85138; }
+        .refresh-btn {
+            background: #2F7A6B;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: 0.2s;
+        }
+        .refresh-btn:hover { background: #1F5A4E; }
+        .header-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        @media (max-width: 600px) {
+            header { flex-direction: column; align-items: stretch; }
+            .header-actions { justify-content: stretch; }
+            table { font-size: 12px; }
+            th, td { padding: 8px 6px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>🏥 Medicare Admin</h1>
+                <div style="font-size:13px; color:#8A9C94;">Healthcare platform dashboard</div>
+            </div>
+            <div class="header-actions">
+                <button class="refresh-btn" onclick="loadAll()">🔄 Refresh</button>
+                <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+            </div>
+        </header>
+
+        <!-- Stats -->
+        <div class="stats" id="stats">
+            <div class="stat-card"><div class="number" id="totalUsers">0</div><div class="label">Total Users</div></div>
+            <div class="stat-card"><div class="number" id="totalMessages">0</div><div class="label">Total Messages</div></div>
+            <div class="stat-card"><div class="number" id="unreadMessages">0</div><div class="label">Unread Messages</div></div>
+            <div class="stat-card"><div class="number" id="totalAppointments">0</div><div class="label">Appointments</div></div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="active" data-tab="users">👤 Users</button>
+            <button data-tab="messages">💬 Messages</button>
+            <button data-tab="appointments">📅 Appointments</button>
+        </div>
+
+        <!-- Users Panel -->
+        <div class="panel active" id="panel-users">
+            <div id="usersContent">
+                <div class="empty-state"><div class="icon">👤</div><p>Loading users...</p></div>
+            </div>
+        </div>
+
+        <!-- Messages Panel -->
+        <div class="panel" id="panel-messages">
+            <div id="messagesContent">
+                <div class="empty-state"><div class="icon">💬</div><p>Loading messages...</p></div>
+            </div>
+        </div>
+
+        <!-- Appointments Panel -->
+        <div class="panel" id="panel-appointments">
+            <div id="appointmentsContent">
+                <div class="empty-state"><div class="icon">📅</div><p>Loading appointments...</p></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check if logged in
+        if (sessionStorage.getItem("adminLoggedIn") !== "true") {
+            window.location.href = "admin-login.html";
+        }
+
+        // Tab switching
+        document.querySelectorAll('.tabs button').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+                document.getElementById('panel-' + this.dataset.tab).classList.add('active');
+            });
+        });
+
+        async function loadAll() {
+            await loadUsers();
+            await loadMessages();
+            await loadAppointments();
+            updateStats();
+        }
+
+        async function loadUsers() {
+            const container = document.getElementById('usersContent');
+            try {
+                const res = await fetch('/api/admin/users');
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message);
+                if (!data.users || data.users.length === 0) {
+                    container.innerHTML = `<div class="empty-state"><div class="icon">👤</div><p>No users registered yet.</p></div>`;
+                    return;
+                }
+                let html = `<table>
+                    <thead><tr>
+                        <th>ID</th>
+                        <th>Full Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Joined</th>
+                    </tr></thead><tbody>`;
+                data.users.forEach(u => {
+                    html += `<tr>
+                        <td>${u.id}</td>
+                        <td><strong>${escapeHTML(u.full_name)}</strong></td>
+                        <td>${escapeHTML(u.email)}</td>
+                        <td>${escapeHTML(u.phone || '—')}</td>
+                        <td>${formatDate(u.created_at)}</td>
+                    </tr>`;
+                });
+                html += `</tbody></table>`;
+                container.innerHTML = html;
+                document.getElementById('totalUsers').textContent = data.users.length;
+            } catch (error) {
+                container.innerHTML = `<div class="empty-state"><p>❌ Error loading users: ${error.message}</p></div>`;
+            }
+        }
+
+        async function loadMessages() {
+            const container = document.getElementById('messagesContent');
+            try {
+                const res = await fetch('/api/admin/messages');
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message);
+                if (!data.messages || data.messages.length === 0) {
+                    container.innerHTML = `<div class="empty-state"><div class="icon">💬</div><p>No messages yet.</p></div>`;
+                    return;
+                }
+                let html = `<table>
+                    <thead><tr>
+                        <th>ID</th>
+                        <th>User</th>
+                        <th>Sender</th>
+                        <th>Message</th>
+                        <th>Status</th>
+                        <th>Sent</th>
+                    </tr></thead><tbody>`;
+                data.messages.forEach(m => {
+                    const statusClass = m.status === 'unread' ? 'unread' : 'read';
+                    html += `<tr>
+                        <td>${m.id}</td>
+                        <td><strong>${escapeHTML(m.full_name)}</strong><br><span style="font-size:12px;color:#8A9C94;">${escapeHTML(m.email)}</span></td>
+                        <td>${m.sender === 'patient' ? '👤 Patient' : '👩‍⚕️ Nurse'}</td>
+                        <td style="max-width:250px;">${escapeHTML(m.message)}</td>
+                        <td><span class="status-badge ${statusClass}">${m.status}</span></td>
+                        <td>${formatDate(m.created_at)}</td>
+                    </tr>`;
+                });
+                html += `</tbody></table>`;
+                container.innerHTML = html;
+                let unread = data.messages.filter(m => m.status === 'unread').length;
+                document.getElementById('totalMessages').textContent = data.messages.length;
+                document.getElementById('unreadMessages').textContent = unread;
+            } catch (error) {
+                container.innerHTML = `<div class="empty-state"><p>❌ Error loading messages: ${error.message}</p></div>`;
+            }
+        }
+
+        async function loadAppointments() {
+            const container = document.getElementById('appointmentsContent');
+            container.innerHTML = `<div class="empty-state"><div class="icon">📅</div><p>Appointments feature coming soon...</p></div>`;
+        }
+
+        function updateStats() {
+            // Stats are updated in each load function
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '—';
+            try {
+                const d = new Date(dateStr);
+                return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+            } catch { return dateStr; }
+        }
+
+        function escapeHTML(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
+        function logout() {
+            sessionStorage.removeItem("adminLoggedIn");
+            window.location.href = "admin-login.html";
+        }
+
+        // Load everything on page load
+        loadAll();
+
+        // Auto-refresh every 30 seconds
+        setInterval(loadAll, 30000);
+    </script>
+</body>
+</html>
